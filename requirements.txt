@@ -1,0 +1,9 @@
+# Flask for web app
+Flask==2.3.3
+
+# HTTP requests for Gist API
+requests==2.31.0
+
+# Environment variables
+python-dotenv==1.0.0
+
