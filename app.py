@@ -44,16 +44,21 @@ def index():
 def get_data():
     """
     API endpoint để lấy tất cả dữ liệu
-    
+
     Returns:
         JSON: Dữ liệu housework của 2 con
     """
     if not db:
         return jsonify({"error": "Database chưa được cấu hình"}), 500
-    
+
     try:
         data = db.read_data()
-        
+
+        # Migrate: Nếu không có task_labels, thêm vào
+        if 'task_labels' not in data:
+            data['task_labels'] = TASK_LABELS
+            db.write_data(data, description="Auto-migrate: Added task_labels")
+
         # Tính tổng điểm cho mỗi con
         for child_id, child_data in data['children'].items():
             total_points = 0
@@ -61,16 +66,18 @@ def get_data():
                 points = data['task_points'].get(task_id, 0)
                 total_points += count * points
             child_data['total_points'] = total_points
-        
-        # Thêm task labels
-        data['task_labels'] = TASK_LABELS
-        
+
+        # Sử dụng task_labels từ data (hoặc fallback)
+        task_labels = data.get('task_labels', TASK_LABELS)
+        data['task_labels'] = task_labels
+
         return jsonify({
             "status": "success",
             "data": data,
             "timestamp": datetime.now().isoformat()
         })
     except Exception as e:
+        print(f"Error in get_data: {str(e)}")
         return jsonify({
             "status": "error",
             "message": str(e)
@@ -198,36 +205,36 @@ def reset_data():
 def update_names():
     """
     API endpoint để cập nhật tên của 2 con
-    
+
     Request body:
         {
             "child1_name": "Tên con 1",
             "child2_name": "Tên con 2"
         }
-    
+
     Returns:
         JSON: Kết quả cập nhật
     """
     if not db:
         return jsonify({"error": "Database chưa được cấu hình"}), 500
-    
+
     try:
         child1_name = request.json.get('child1_name')
         child2_name = request.json.get('child2_name')
-        
+
         if not child1_name or not child2_name:
             return jsonify({
                 "status": "error",
                 "message": "Thiếu tên con"
             }), 400
-        
+
         # Đọc dữ liệu hiện tại
         data = db.read_data()
-        
+
         # Cập nhật tên
         data['children']['child1']['name'] = child1_name
         data['children']['child2']['name'] = child2_name
-        
+
         # Lưu vào Gist
         if db.write_data(data):
             return jsonify({
@@ -239,11 +246,146 @@ def update_names():
                 "status": "error",
                 "message": "Không thể lưu dữ liệu"
             }), 500
-            
+
     except Exception as e:
         return jsonify({
             "status": "error",
             "message": str(e)
+        }), 500
+
+@app.route('/api/add-task', methods=['POST'])
+def add_task():
+    """
+    API endpoint để thêm công việc mới
+
+    Request body:
+        {
+            "task_id": "lau_ban",
+            "task_name": "Lau bàn",
+            "points": 5
+        }
+
+    Returns:
+        JSON: Kết quả thêm công việc
+    """
+    if not db:
+        return jsonify({"error": "Database chưa được cấu hình"}), 500
+
+    try:
+        task_id = request.json.get('task_id')
+        task_name = request.json.get('task_name')
+        points = request.json.get('points', 1)
+
+        if not task_id or not task_name:
+            return jsonify({
+                "status": "error",
+                "message": "Thiếu task_id hoặc task_name"
+            }), 400
+
+        # Đọc dữ liệu hiện tại
+        data = db.read_data()
+
+        # Kiểm tra task đã tồn tại chưa
+        if task_id in data.get('task_points', {}):
+            return jsonify({
+                "status": "error",
+                "message": "Công việc này đã tồn tại"
+            }), 400
+
+        # Đảm bảo task_labels tồn tại
+        if 'task_labels' not in data:
+            data['task_labels'] = {}
+
+        # Thêm công việc mới
+        data['task_points'][task_id] = points
+        data['task_labels'][task_id] = task_name
+
+        # Thêm vào task list của cả 2 con
+        data['children']['child1']['tasks'][task_id] = 0
+        data['children']['child2']['tasks'][task_id] = 0
+
+        # Lưu vào Gist
+        if db.write_data(data):
+            return jsonify({
+                "status": "success",
+                "message": "Đã thêm công việc thành công"
+            })
+        else:
+            return jsonify({
+                "status": "error",
+                "message": "Không thể lưu dữ liệu"
+            }), 500
+
+    except Exception as e:
+        print(f"Error in add_task: {str(e)}")
+        return jsonify({
+            "status": "error",
+            "message": f"Lỗi: {str(e)}"
+        }), 500
+
+@app.route('/api/delete-task', methods=['POST'])
+def delete_task():
+    """
+    API endpoint để xóa công việc
+
+    Request body:
+        {
+            "task_id": "lau_ban"
+        }
+
+    Returns:
+        JSON: Kết quả xóa công việc
+    """
+    if not db:
+        return jsonify({"error": "Database chưa được cấu hình"}), 500
+
+    try:
+        task_id = request.json.get('task_id')
+
+        if not task_id:
+            return jsonify({
+                "status": "error",
+                "message": "Thiếu task_id"
+            }), 400
+
+        # Đọc dữ liệu hiện tại
+        data = db.read_data()
+
+        # Kiểm tra task có tồn tại không
+        if task_id not in data.get('task_points', {}):
+            return jsonify({
+                "status": "error",
+                "message": "Công việc không tồn tại"
+            }), 400
+
+        # Xóa công việc
+        del data['task_points'][task_id]
+        if 'task_labels' in data and task_id in data['task_labels']:
+            del data['task_labels'][task_id]
+
+        # Xóa khỏi task list của cả 2 con
+        if task_id in data['children']['child1']['tasks']:
+            del data['children']['child1']['tasks'][task_id]
+        if task_id in data['children']['child2']['tasks']:
+            del data['children']['child2']['tasks'][task_id]
+
+        # Lưu vào Gist
+        if db.write_data(data):
+            return jsonify({
+                "status": "success",
+                "message": "Đã xóa công việc thành công"
+            })
+        else:
+            return jsonify({
+                "status": "error",
+                "message": "Không thể lưu dữ liệu"
+            }), 500
+
+    except Exception as e:
+        print(f"Error in delete_task: {str(e)}")
+        return jsonify({
+            "status": "error",
+            "message": f"Lỗi: {str(e)}"
         }), 500
 
 if __name__ == '__main__':

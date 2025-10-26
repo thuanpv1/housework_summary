@@ -25,6 +25,9 @@
                     <button class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#settingsModal">
                         ⚙️ Cài đặt tên
                     </button>
+                    <button class="btn btn-info" data-bs-toggle="modal" data-bs-target="#tasksModal">
+                        ➕ Quản lý công việc
+                    </button>
                 </div>
                 <div id="lastUpdate" class="text-muted mt-2"></div>
             </div>
@@ -153,6 +156,44 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
                     <button type="button" class="btn btn-primary" onclick="updateNames()">Lưu</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tasks Management Modal -->
+    <div class="modal fade" id="tasksModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">➕ Quản lý công việc</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Existing Tasks -->
+                    <h6 class="mb-3">📋 Công việc hiện tại:</h6>
+                    <div id="existingTasksList" class="mb-4">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+
+                    <hr>
+
+                    <!-- Add New Task -->
+                    <h6 class="mb-3">➕ Thêm công việc mới:</h6>
+                    <div class="row">
+                        <div class="col-md-8">
+                            <input type="text" class="form-control" id="newTaskName" placeholder="Tên công việc (vd: Lau bàn)">
+                        </div>
+                        <div class="col-md-4">
+                            <input type="number" class="form-control" id="newTaskPoints" placeholder="Điểm" min="1" value="1">
+                        </div>
+                    </div>
+                    <button class="btn btn-success mt-2 w-100" onclick="addNewTask()">
+                        ➕ Thêm công việc
+                    </button>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
                 </div>
             </div>
         </div>

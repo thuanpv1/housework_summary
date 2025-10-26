@@ -380,3 +380,37 @@ h1.display-4 {
     font-size: 0.85rem;
 }
 
+/* Task Management Modal */
+.task-management-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f8f9fa;
+    padding: 12px 15px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    transition: all 0.3s ease;
+}
+
+.task-management-item:hover {
+    background: #e9ecef;
+    transform: translateX(5px);
+}
+
+.task-management-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.task-management-info strong {
+    color: #2c3e50;
+    font-size: 1rem;
+}
+
+.task-management-info small {
+    color: #7f8c8d;
+    font-size: 0.85rem;
+}
+

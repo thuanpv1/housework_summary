@@ -137,6 +137,14 @@ class GistDatabase:
                 "do_rac": 3,
                 "khac": 1
             },
+            "task_labels": {
+                "rua_bat": "Rửa bát",
+                "quet_nha": "Quét nhà",
+                "cat_ghe": "Cất ghế",
+                "cat_com": "Cất cơm",
+                "do_rac": "Đổ rác",
+                "khac": "Khác"
+            },
             "last_updated": datetime.now().isoformat()
         }
     

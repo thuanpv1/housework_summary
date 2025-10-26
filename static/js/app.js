@@ -7,6 +7,13 @@ document.addEventListener('DOMContentLoaded', () => {
     loadData();
 });
 
+// Load existing tasks into modal when opened
+document.getElementById('tasksModal').addEventListener('show.bs.modal', () => {
+    if (currentData) {
+        displayExistingTasks(currentData);
+    }
+});
+
 /**
  * Load data from API
  */
@@ -459,4 +466,130 @@ document.getElementById('settingsModal').addEventListener('show.bs.modal', () =>
         document.getElementById('child2NameInput').value = currentData.children.child2.name;
     }
 });
+
+/**
+ * Display existing tasks in modal
+ */
+function displayExistingTasks(data) {
+    const container = document.getElementById('existingTasksList');
+    container.innerHTML = '';
+
+    const taskLabels = data.task_labels;
+    const taskPoints = data.task_points;
+
+    for (const [taskId, label] of Object.entries(taskLabels)) {
+        const points = taskPoints[taskId] || 0;
+
+        const taskItem = document.createElement('div');
+        taskItem.className = 'task-management-item';
+        taskItem.innerHTML = `
+            <div class="task-management-info">
+                <strong>${label}</strong>
+                <small class="text-muted">${points} điểm/lần</small>
+            </div>
+            <button class="btn btn-sm btn-danger" onclick="deleteTask('${taskId}')">
+                🗑️ Xóa
+            </button>
+        `;
+
+        container.appendChild(taskItem);
+    }
+}
+
+/**
+ * Add new task
+ */
+async function addNewTask() {
+    const taskName = document.getElementById('newTaskName').value.trim();
+    const points = parseInt(document.getElementById('newTaskPoints').value) || 1;
+
+    if (!taskName) {
+        alert('Vui lòng nhập tên công việc!');
+        return;
+    }
+
+    // Convert task name to task_id (lowercase, replace spaces with underscores)
+    const taskId = taskName.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+
+    try {
+        const response = await fetch('/api/add-task', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                task_id: taskId,
+                task_name: taskName,
+                points: points
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        if (result.status === 'success') {
+            alert('✅ Đã thêm công việc thành công!');
+            document.getElementById('newTaskName').value = '';
+            document.getElementById('newTaskPoints').value = '1';
+
+            // Reload data
+            await loadData();
+
+            // Update modal
+            displayExistingTasks(currentData);
+        } else {
+            throw new Error(result.message || 'Unknown error');
+        }
+
+    } catch (error) {
+        console.error('Error adding task:', error);
+        alert('❌ Không thể thêm công việc. ' + error.message);
+    }
+}
+
+/**
+ * Delete task
+ */
+async function deleteTask(taskId) {
+    if (!confirm('Bạn có chắc chắn muốn xóa công việc này?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/delete-task', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                task_id: taskId
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        if (result.status === 'success') {
+            alert('✅ Đã xóa công việc thành công!');
+
+            // Reload data
+            await loadData();
+
+            // Update modal
+            displayExistingTasks(currentData);
+        } else {
+            throw new Error(result.message || 'Unknown error');
+        }
+
+    } catch (error) {
+        console.error('Error deleting task:', error);
+        alert('❌ Không thể xóa công việc. ' + error.message);
+    }
+}
 
