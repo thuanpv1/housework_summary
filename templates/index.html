@@ -52,8 +52,42 @@
                         <div class="card-header">
                             <h5 class="mb-0">📈 Biểu đồ tổng điểm</h5>
                         </div>
-                        <div class="card-body">
-                            <canvas id="pointsChart" height="80"></canvas>
+                        <div class="card-body chart-container">
+                            <canvas id="pointsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Table (Better for mobile) -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">📋 Chi tiết công việc</h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="table-responsive">
+                                <table class="table table-hover mb-0" id="summaryTable">
+                                    <thead>
+                                        <tr>
+                                            <th>Công việc</th>
+                                            <th class="text-center" id="summaryChild1Name">Bin</th>
+                                            <th class="text-center" id="summaryChild2Name">Tho</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="summaryTableBody">
+                                        <!-- Will be populated by JavaScript -->
+                                    </tbody>
+                                    <tfoot class="table-light">
+                                        <tr class="fw-bold">
+                                            <td>TỔNG ĐIỂM</td>
+                                            <td class="text-center" id="summaryChild1Total">0</td>
+                                            <td class="text-center" id="summaryChild2Total">0</td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>

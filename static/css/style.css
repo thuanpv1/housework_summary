@@ -71,13 +71,13 @@ h1.display-4 {
 .task-list {
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 8px;
 }
 
 .task-item {
     background: #f8f9fa;
-    border-radius: 10px;
-    padding: 15px;
+    border-radius: 8px;
+    padding: 10px 12px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -86,7 +86,7 @@ h1.display-4 {
 
 .task-item:hover {
     background: #e9ecef;
-    transform: scale(1.02);
+    transform: scale(1.01);
 }
 
 .task-info {
@@ -95,40 +95,40 @@ h1.display-4 {
 
 .task-name {
     font-weight: 600;
-    font-size: 1.1rem;
+    font-size: 0.95rem;
     color: #2c3e50;
-    margin-bottom: 5px;
+    margin-bottom: 2px;
 }
 
 .task-points {
     color: #7f8c8d;
-    font-size: 0.9rem;
+    font-size: 0.8rem;
 }
 
 .task-count {
-    font-size: 1.3rem;
+    font-size: 1.1rem;
     font-weight: bold;
     color: #2c3e50;
-    margin: 0 15px;
-    min-width: 40px;
+    margin: 0 10px;
+    min-width: 30px;
     text-align: center;
 }
 
 .task-controls {
     display: flex;
-    gap: 10px;
+    gap: 8px;
     align-items: center;
 }
 
 /* Buttons */
 .btn-task {
-    width: 40px;
-    height: 40px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.2rem;
+    font-size: 1rem;
     font-weight: bold;
     border: none;
     transition: all 0.3s ease;
@@ -136,8 +136,8 @@ h1.display-4 {
 }
 
 .btn-task:hover {
-    transform: scale(1.1);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    transform: scale(1.15);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .btn-increment {
@@ -175,8 +175,15 @@ h1.display-4 {
 }
 
 /* Chart Container */
+.chart-container {
+    position: relative;
+    min-height: 300px;
+    max-height: 400px;
+    padding: 20px 10px;
+}
+
 #pointsChart {
-    max-height: 300px;
+    max-height: 350px;
 }
 
 /* Buttons in Header */
@@ -241,22 +248,78 @@ h1.display-4 {
 /* Responsive */
 @media (max-width: 768px) {
     .task-item {
-        flex-direction: column;
-        gap: 10px;
-        text-align: center;
+        padding: 8px 10px;
+        gap: 5px;
     }
-    
+
+    .task-name {
+        font-size: 0.9rem;
+    }
+
+    .task-points {
+        font-size: 0.75rem;
+    }
+
+    .task-count {
+        font-size: 1rem;
+        margin: 0 8px;
+        min-width: 25px;
+    }
+
+    .btn-task {
+        width: 28px;
+        height: 28px;
+        font-size: 0.9rem;
+    }
+
     .task-controls {
-        width: 100%;
-        justify-content: center;
+        gap: 6px;
     }
-    
+
     h1.display-4 {
         font-size: 2rem;
     }
-    
+
     .badge {
         font-size: 1.2rem !important;
+    }
+
+    /* Chart adjustments for mobile */
+    .chart-container {
+        min-height: 400px;
+        max-height: 500px;
+        padding: 15px 5px 10px 5px;
+    }
+
+    #pointsChart {
+        max-height: 450px;
+    }
+
+    .card-body.chart-container {
+        padding-bottom: 120px !important; /* Extra space for legend */
+    }
+
+    /* Summary table mobile adjustments */
+    #summaryTable {
+        font-size: 0.85rem;
+    }
+
+    #summaryTable thead th {
+        padding: 10px 5px;
+        font-size: 0.9rem;
+    }
+
+    #summaryTable tbody td {
+        padding: 10px 5px;
+    }
+
+    #summaryTable tfoot td {
+        padding: 12px 5px;
+        font-size: 1rem;
+    }
+
+    #summaryTable small {
+        font-size: 0.75rem;
     }
 }
 
@@ -283,5 +346,37 @@ h1.display-4 {
     top: 20px;
     right: 20px;
     z-index: 9999;
+}
+
+/* Summary Table */
+#summaryTable {
+    font-size: 0.95rem;
+}
+
+#summaryTable thead th {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    padding: 12px 8px;
+    font-weight: 600;
+}
+
+#summaryTable tbody td {
+    padding: 12px 8px;
+    vertical-align: middle;
+}
+
+#summaryTable tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+#summaryTable tfoot td {
+    padding: 15px 8px;
+    font-size: 1.1rem;
+    border-top: 2px solid #667eea;
+}
+
+#summaryTable small {
+    font-size: 0.85rem;
 }
 

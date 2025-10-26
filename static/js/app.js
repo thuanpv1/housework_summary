@@ -47,16 +47,19 @@ function displayData(data) {
     // Update child names
     document.getElementById('child1Name').textContent = data.children.child1.name;
     document.getElementById('child2Name').textContent = data.children.child2.name;
-    
+
     // Update total points
     document.getElementById('child1TotalPoints').textContent = `${data.children.child1.total_points} điểm`;
     document.getElementById('child2TotalPoints').textContent = `${data.children.child2.total_points} điểm`;
-    
+
     // Display tasks for child1
     displayChildTasks('child1', data);
-    
+
     // Display tasks for child2
     displayChildTasks('child2', data);
+
+    // Update summary table
+    updateSummaryTable(data);
 }
 
 /**
@@ -224,6 +227,52 @@ async function updateNames() {
 }
 
 /**
+ * Update summary table
+ */
+function updateSummaryTable(data) {
+    const tbody = document.getElementById('summaryTableBody');
+    tbody.innerHTML = '';
+
+    // Update header names
+    document.getElementById('summaryChild1Name').textContent = data.children.child1.name;
+    document.getElementById('summaryChild2Name').textContent = data.children.child2.name;
+
+    const taskLabels = data.task_labels;
+    const taskPoints = data.task_points;
+
+    // Create rows for each task
+    for (const [taskId, label] of Object.entries(taskLabels)) {
+        const child1Count = data.children.child1.tasks[taskId] || 0;
+        const child2Count = data.children.child2.tasks[taskId] || 0;
+        const points = taskPoints[taskId] || 0;
+
+        const child1Total = child1Count * points;
+        const child2Total = child2Count * points;
+
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>
+                <strong>${label}</strong>
+                <small class="text-muted d-block">${points} điểm/lần</small>
+            </td>
+            <td class="text-center">
+                <div>${child1Count} lần</div>
+                <small class="text-primary fw-bold">${child1Total} điểm</small>
+            </td>
+            <td class="text-center">
+                <div>${child2Count} lần</div>
+                <small class="text-success fw-bold">${child2Total} điểm</small>
+            </td>
+        `;
+        tbody.appendChild(row);
+    }
+
+    // Update totals
+    document.getElementById('summaryChild1Total').textContent = `${data.children.child1.total_points} điểm`;
+    document.getElementById('summaryChild2Total').textContent = `${data.children.child2.total_points} điểm`;
+}
+
+/**
  * Update chart
  */
 function updateChart(data) {
@@ -265,6 +314,9 @@ function updateChart(data) {
         };
     });
 
+    // Detect if mobile
+    const isMobile = window.innerWidth <= 768;
+
     // Create new stacked bar chart
     pointsChart = new Chart(ctx, {
         type: 'bar',
@@ -274,22 +326,27 @@ function updateChart(data) {
         },
         options: {
             responsive: true,
-            maintainAspectRatio: true,
+            maintainAspectRatio: false,
             plugins: {
                 legend: {
                     display: true,
                     position: 'bottom',
                     labels: {
-                        padding: 15,
+                        padding: isMobile ? 8 : 15,
                         font: {
-                            size: 12
-                        }
-                    }
+                            size: isMobile ? 10 : 12
+                        },
+                        boxWidth: isMobile ? 12 : 15,
+                        boxHeight: isMobile ? 12 : 15,
+                        usePointStyle: false
+                    },
+                    maxHeight: isMobile ? 100 : 150
                 },
                 title: {
                     display: false
                 },
                 tooltip: {
+                    enabled: !isMobile, // Disable tooltip on mobile (hard to use)
                     callbacks: {
                         label: function(context) {
                             const label = context.dataset.label || '';
@@ -317,18 +374,32 @@ function updateChart(data) {
                     stacked: true,
                     grid: {
                         display: false
+                    },
+                    ticks: {
+                        font: {
+                            size: isMobile ? 12 : 14
+                        }
                     }
                 },
                 y: {
                     stacked: true,
                     beginAtZero: true,
                     ticks: {
-                        stepSize: 5
+                        stepSize: 5,
+                        font: {
+                            size: isMobile ? 10 : 12
+                        }
                     },
                     title: {
-                        display: true,
+                        display: !isMobile,
                         text: 'Điểm'
                     }
+                }
+            },
+            layout: {
+                padding: {
+                    top: 10,
+                    bottom: isMobile ? 10 : 5
                 }
             }
         }
