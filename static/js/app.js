@@ -228,52 +228,106 @@ async function updateNames() {
  */
 function updateChart(data) {
     const ctx = document.getElementById('pointsChart').getContext('2d');
-    
-    const child1Points = data.children.child1.total_points;
-    const child2Points = data.children.child2.total_points;
+
     const child1Name = data.children.child1.name;
     const child2Name = data.children.child2.name;
-    
+    const taskLabels = data.task_labels;
+    const taskPoints = data.task_points;
+
     // Destroy existing chart if exists
     if (pointsChart) {
         pointsChart.destroy();
     }
-    
-    // Create new chart
+
+    // Tạo datasets cho từng loại công việc
+    const taskIds = Object.keys(taskLabels);
+    const colors = [
+        { bg: 'rgba(255, 99, 132, 0.8)', border: 'rgba(255, 99, 132, 1)' },
+        { bg: 'rgba(54, 162, 235, 0.8)', border: 'rgba(54, 162, 235, 1)' },
+        { bg: 'rgba(255, 206, 86, 0.8)', border: 'rgba(255, 206, 86, 1)' },
+        { bg: 'rgba(75, 192, 192, 0.8)', border: 'rgba(75, 192, 192, 1)' },
+        { bg: 'rgba(153, 102, 255, 0.8)', border: 'rgba(153, 102, 255, 1)' },
+        { bg: 'rgba(255, 159, 64, 0.8)', border: 'rgba(255, 159, 64, 1)' }
+    ];
+
+    const datasets = taskIds.map((taskId, index) => {
+        const child1Count = data.children.child1.tasks[taskId] || 0;
+        const child2Count = data.children.child2.tasks[taskId] || 0;
+        const points = taskPoints[taskId] || 0;
+        const label = taskLabels[taskId] || taskId;
+
+        return {
+            label: `${label} (${points}đ/lần)`,
+            data: [child1Count * points, child2Count * points],
+            backgroundColor: colors[index % colors.length].bg,
+            borderColor: colors[index % colors.length].border,
+            borderWidth: 1
+        };
+    });
+
+    // Create new stacked bar chart
     pointsChart = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: [child1Name, child2Name],
-            datasets: [{
-                label: 'Tổng điểm',
-                data: [child1Points, child2Points],
-                backgroundColor: [
-                    'rgba(102, 126, 234, 0.8)',
-                    'rgba(240, 147, 251, 0.8)'
-                ],
-                borderColor: [
-                    'rgba(102, 126, 234, 1)',
-                    'rgba(240, 147, 251, 1)'
-                ],
-                borderWidth: 2
-            }]
+            datasets: datasets
         },
         options: {
             responsive: true,
             maintainAspectRatio: true,
             plugins: {
                 legend: {
-                    display: false
+                    display: true,
+                    position: 'bottom',
+                    labels: {
+                        padding: 15,
+                        font: {
+                            size: 12
+                        }
+                    }
                 },
                 title: {
                     display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.dataset.label || '';
+                            const value = context.parsed.y || 0;
+
+                            // Tính số lần làm việc
+                            const taskId = taskIds[context.datasetIndex];
+                            const childId = context.dataIndex === 0 ? 'child1' : 'child2';
+                            const count = data.children[childId].tasks[taskId] || 0;
+
+                            return `${label}: ${count} lần = ${value} điểm`;
+                        },
+                        footer: function(tooltipItems) {
+                            let total = 0;
+                            tooltipItems.forEach(item => {
+                                total += item.parsed.y;
+                            });
+                            return 'Tổng: ' + total + ' điểm';
+                        }
+                    }
                 }
             },
             scales: {
+                x: {
+                    stacked: true,
+                    grid: {
+                        display: false
+                    }
+                },
                 y: {
+                    stacked: true,
                     beginAtZero: true,
                     ticks: {
                         stepSize: 5
+                    },
+                    title: {
+                        display: true,
+                        text: 'Điểm'
                     }
                 }
             }
