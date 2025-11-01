@@ -15,7 +15,10 @@
             <div class="col-12 text-center">
                 <h1 class="display-4">📊 Housework Tracker</h1>
                 <p class="text-muted">Theo dõi công việc nhà của các con</p>
-                <div class="d-flex justify-content-center gap-2 mt-3">
+                <div class="d-flex justify-content-center gap-2 mt-3 flex-wrap">
+                    <button id="saveBtn" class="btn btn-success btn-lg" onclick="saveAllData()" style="display: none;">
+                        💾 Lưu dữ liệu
+                    </button>
                     <button id="refreshBtn" class="btn btn-primary" onclick="loadData()">
                         🔄 Tải lại
                     </button>

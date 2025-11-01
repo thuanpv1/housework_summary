@@ -1,6 +1,7 @@
 // Global variables
 let currentData = null;
 let pointsChart = null;
+let hasUnsavedChanges = false;
 
 // Load data when page loads
 document.addEventListener('DOMContentLoaded', () => {
@@ -34,6 +35,8 @@ async function loadData() {
             displayData(currentData);
             updateChart(currentData);
             updateLastUpdateTime(result.timestamp);
+            hasUnsavedChanges = false;
+            hideSaveButton();
             hideLoading();
             showMainContent();
         } else {
@@ -108,47 +111,107 @@ function displayChildTasks(childId, data) {
 }
 
 /**
- * Update task count
+ * Update task count (local only, no save)
  */
-async function updateTask(childId, taskId, action) {
+function updateTask(childId, taskId, action) {
     try {
-        const response = await fetch('/api/update', {
+        // Update local data
+        const currentCount = currentData.children[childId].tasks[taskId];
+        const points = currentData.task_points[taskId];
+
+        if (action === 'increment') {
+            currentData.children[childId].tasks[taskId] = currentCount + 1;
+        } else if (action === 'decrement' && currentCount > 0) {
+            currentData.children[childId].tasks[taskId] = currentCount - 1;
+        } else {
+            return; // Don't go below 0
+        }
+
+        // Recalculate total points
+        let totalPoints = 0;
+        for (const [tId, count] of Object.entries(currentData.children[childId].tasks)) {
+            const pts = currentData.task_points[tId] || 0;
+            totalPoints += count * pts;
+        }
+        currentData.children[childId].total_points = totalPoints;
+
+        // Update UI
+        const countElement = document.getElementById(`${childId}_${taskId}_count`);
+        countElement.textContent = currentData.children[childId].tasks[taskId];
+        countElement.classList.add('updated');
+        setTimeout(() => countElement.classList.remove('updated'), 300);
+
+        // Update total points display
+        document.getElementById(`${childId}TotalPoints`).textContent = `${totalPoints} điểm`;
+
+        // Update chart and summary table
+        updateChart(currentData);
+        updateSummaryTable(currentData);
+
+        // Mark as unsaved
+        hasUnsavedChanges = true;
+        showSaveButton();
+
+    } catch (error) {
+        console.error('Error updating task:', error);
+        showError('Không thể cập nhật. Vui lòng thử lại.');
+    }
+}
+
+/**
+ * Show save button
+ */
+function showSaveButton() {
+    const saveBtn = document.getElementById('saveBtn');
+    saveBtn.style.display = 'block';
+}
+
+/**
+ * Hide save button
+ */
+function hideSaveButton() {
+    const saveBtn = document.getElementById('saveBtn');
+    saveBtn.style.display = 'none';
+}
+
+/**
+ * Save all data to Gist
+ */
+async function saveAllData() {
+    try {
+        showLoading();
+        hideError();
+
+        const response = await fetch('/api/save-all', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({
-                child_id: childId,
-                task_id: taskId,
-                action: action
-            })
+            body: JSON.stringify(currentData)
         });
-        
+
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
+
         const result = await response.json();
-        
+
         if (result.status === 'success') {
-            // Update count with animation
-            const countElement = document.getElementById(`${childId}_${taskId}_count`);
-            countElement.textContent = result.new_count;
-            countElement.classList.add('updated');
-            setTimeout(() => countElement.classList.remove('updated'), 300);
-            
-            // Update total points
-            document.getElementById(`${childId}TotalPoints`).textContent = `${result.total_points} điểm`;
-            
-            // Reload data to update chart
+            hasUnsavedChanges = false;
+            hideSaveButton();
+            hideLoading();
+            showMainContent();
+            alert('✅ Đã lưu dữ liệu thành công!');
             await loadData();
         } else {
             throw new Error(result.message || 'Unknown error');
         }
-        
+
     } catch (error) {
-        console.error('Error updating task:', error);
-        showError('Không thể cập nhật. Vui lòng thử lại.');
+        console.error('Error saving data:', error);
+        hideLoading();
+        showMainContent();
+        showError('Không thể lưu dữ liệu. Vui lòng thử lại.');
     }
 }
 

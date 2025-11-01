@@ -175,27 +175,37 @@ def update_task():
 def reset_data():
     """
     API endpoint để reset tất cả dữ liệu về 0
-    
+    Giữ lại các task tự thêm, chỉ reset số lần làm về 0
+
     Returns:
         JSON: Kết quả reset
     """
     if not db:
         return jsonify({"error": "Database chưa được cấu hình"}), 500
-    
+
     try:
-        # Khởi tạo lại dữ liệu mặc định
-        if db.initialize_gist():
+        # Đọc dữ liệu hiện tại
+        data = db.read_data()
+
+        # Reset số lần làm về 0 cho tất cả task (giữ lại task_points và task_labels)
+        for child_id in data['children']:
+            for task_id in data['children'][child_id]['tasks']:
+                data['children'][child_id]['tasks'][task_id] = 0
+
+        # Lưu dữ liệu
+        if db.write_data(data, description="Reset: Đặt lại số lần làm về 0"):
             return jsonify({
                 "status": "success",
-                "message": "Đã reset dữ liệu thành công"
+                "message": "Đã reset dữ liệu thành công (giữ lại các task tự thêm)"
             })
         else:
             return jsonify({
                 "status": "error",
                 "message": "Không thể reset dữ liệu"
             }), 500
-            
+
     except Exception as e:
+        print(f"Error in reset_data: {str(e)}")
         return jsonify({
             "status": "error",
             "message": str(e)
@@ -383,6 +393,48 @@ def delete_task():
 
     except Exception as e:
         print(f"Error in delete_task: {str(e)}")
+        return jsonify({
+            "status": "error",
+            "message": f"Lỗi: {str(e)}"
+        }), 500
+
+
+@app.route('/api/save-all', methods=['POST'])
+def save_all():
+    """
+    API endpoint để lưu tất cả dữ liệu
+
+    Request body: Toàn bộ data object
+
+    Returns:
+        JSON: Kết quả lưu
+    """
+    if not db:
+        return jsonify({"error": "Database chưa được cấu hình"}), 500
+
+    try:
+        data = request.json
+
+        if not data:
+            return jsonify({
+                "status": "error",
+                "message": "Không có dữ liệu để lưu"
+            }), 400
+
+        # Lưu vào Gist
+        if db.write_data(data, description="Save: Cập nhật dữ liệu từ webapp"):
+            return jsonify({
+                "status": "success",
+                "message": "Đã lưu dữ liệu thành công"
+            })
+        else:
+            return jsonify({
+                "status": "error",
+                "message": "Không thể lưu dữ liệu"
+            }), 500
+
+    except Exception as e:
+        print(f"Error in save_all: {str(e)}")
         return jsonify({
             "status": "error",
             "message": f"Lỗi: {str(e)}"
