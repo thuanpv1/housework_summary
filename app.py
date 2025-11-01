@@ -479,6 +479,26 @@ def get_alert_data():
         }), 500
 
 
+@app.route('/api/alert/json')
+def get_alert_json():
+    """
+    API endpoint để lấy alert data dưới dạng JSON thuần (cho bot MQL5)
+    URL cố định, dữ liệu luôn mới nhất
+
+    Returns:
+        JSON: Dữ liệu alert (không có wrapper status)
+    """
+    if not alert_db:
+        return jsonify({}), 500
+
+    try:
+        data = alert_db.read_data()
+        return jsonify(data)
+    except Exception as e:
+        print(f"Error in get_alert_json: {str(e)}")
+        return jsonify({}), 500
+
+
 @app.route('/api/alert/add', methods=['POST'])
 def add_alert():
     """
