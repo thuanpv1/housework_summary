@@ -1,5 +1,6 @@
 from flask import Flask, render_template, jsonify, request
 from gist_database import GistDatabase
+from alert_database import AlertDatabase
 from datetime import datetime
 import os
 from dotenv import load_dotenv
@@ -23,6 +24,10 @@ if not GIST_ID or not GITHUB_TOKEN:
 # Khởi tạo database
 db = GistDatabase(GIST_ID, GITHUB_TOKEN) if GIST_ID and GITHUB_TOKEN else None
 
+# Alert database - sử dụng cùng Gist nhưng file khác
+ALERT_GIST_ID = os.environ.get('ALERT_GIST_ID', GIST_ID)
+alert_db = AlertDatabase(ALERT_GIST_ID, GITHUB_TOKEN) if ALERT_GIST_ID and GITHUB_TOKEN else None
+
 # Định nghĩa task labels
 TASK_LABELS = {
     "rua_bat": "Rửa bát",
@@ -39,6 +44,14 @@ def index():
     Trang chủ hiển thị dashboard
     """
     return render_template('index.html')
+
+
+@app.route('/alert')
+def addalert():
+    """
+    Trang quản lý alert
+    """
+    return render_template('addalert.html')
 
 @app.route('/api/data')
 def get_data():
@@ -438,6 +451,228 @@ def save_all():
         return jsonify({
             "status": "error",
             "message": f"Lỗi: {str(e)}"
+        }), 500
+
+
+# ============ ALERT MANAGEMENT ENDPOINTS ============
+
+@app.route('/api/alert/data')
+def get_alert_data():
+    """
+    API endpoint để lấy tất cả alert data
+    """
+    if not alert_db:
+        return jsonify({"error": "Alert database chưa được cấu hình"}), 500
+
+    try:
+        data = alert_db.read_data()
+        return jsonify({
+            "status": "success",
+            "data": data,
+            "timestamp": datetime.now().isoformat()
+        })
+    except Exception as e:
+        print(f"Error in get_alert_data: {str(e)}")
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
+
+@app.route('/api/alert/add', methods=['POST'])
+def add_alert():
+    """
+    API endpoint để thêm alert mới
+    """
+    if not alert_db:
+        return jsonify({"error": "Alert database chưa được cấu hình"}), 500
+
+    try:
+        symbol = request.json.get('symbol', '').upper()
+        alert_price = request.json.get('alert_price')
+        direction = request.json.get('direction', 'above')
+
+        if not symbol or alert_price is None:
+            return jsonify({
+                "status": "error",
+                "message": "Thiếu symbol hoặc alert_price"
+            }), 400
+
+        if direction not in ['above', 'below']:
+            return jsonify({
+                "status": "error",
+                "message": "Direction phải là 'above' hoặc 'below'"
+            }), 400
+
+        data = alert_db.read_data()
+
+        data[symbol] = {
+            "alert_price": float(alert_price),
+            "direction": direction
+        }
+
+        if alert_db.write_data(data, description=f"Add alert: {symbol}"):
+            return jsonify({
+                "status": "success",
+                "message": f"Đã thêm alert cho {symbol}"
+            })
+        else:
+            return jsonify({
+                "status": "error",
+                "message": "Không thể lưu dữ liệu"
+            }), 500
+
+    except Exception as e:
+        print(f"Error in add_alert: {str(e)}")
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
+
+@app.route('/api/alert/update-price', methods=['POST'])
+def update_alert_price():
+    """
+    API endpoint để cập nhật giá alert
+    """
+    if not alert_db:
+        return jsonify({"error": "Alert database chưa được cấu hình"}), 500
+
+    try:
+        symbol = request.json.get('symbol', '').upper()
+        alert_price = request.json.get('alert_price')
+
+        if not symbol or alert_price is None:
+            return jsonify({
+                "status": "error",
+                "message": "Thiếu symbol hoặc alert_price"
+            }), 400
+
+        data = alert_db.read_data()
+
+        if symbol not in data:
+            return jsonify({
+                "status": "error",
+                "message": f"Symbol {symbol} không tồn tại"
+            }), 404
+
+        data[symbol]["alert_price"] = float(alert_price)
+
+        if alert_db.write_data(data, description=f"Update price: {symbol}"):
+            return jsonify({
+                "status": "success",
+                "message": f"Đã cập nhật giá cho {symbol}"
+            })
+        else:
+            return jsonify({
+                "status": "error",
+                "message": "Không thể lưu dữ liệu"
+            }), 500
+
+    except Exception as e:
+        print(f"Error in update_alert_price: {str(e)}")
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
+
+@app.route('/api/alert/update-direction', methods=['POST'])
+def update_alert_direction():
+    """
+    API endpoint để cập nhật direction alert
+    """
+    if not alert_db:
+        return jsonify({"error": "Alert database chưa được cấu hình"}), 500
+
+    try:
+        symbol = request.json.get('symbol', '').upper()
+        direction = request.json.get('direction')
+
+        if not symbol or not direction:
+            return jsonify({
+                "status": "error",
+                "message": "Thiếu symbol hoặc direction"
+            }), 400
+
+        if direction not in ['above', 'below']:
+            return jsonify({
+                "status": "error",
+                "message": "Direction phải là 'above' hoặc 'below'"
+            }), 400
+
+        data = alert_db.read_data()
+
+        if symbol not in data:
+            return jsonify({
+                "status": "error",
+                "message": f"Symbol {symbol} không tồn tại"
+            }), 404
+
+        data[symbol]["direction"] = direction
+
+        if alert_db.write_data(data, description=f"Update direction: {symbol}"):
+            return jsonify({
+                "status": "success",
+                "message": f"Đã cập nhật direction cho {symbol}"
+            })
+        else:
+            return jsonify({
+                "status": "error",
+                "message": "Không thể lưu dữ liệu"
+            }), 500
+
+    except Exception as e:
+        print(f"Error in update_alert_direction: {str(e)}")
+        return jsonify({
+            "status": "error",
+            "message": str(e)
+        }), 500
+
+
+@app.route('/api/alert/delete', methods=['POST'])
+def delete_alert():
+    """
+    API endpoint để xóa alert
+    """
+    if not alert_db:
+        return jsonify({"error": "Alert database chưa được cấu hình"}), 500
+
+    try:
+        symbol = request.json.get('symbol', '').upper()
+
+        if not symbol:
+            return jsonify({
+                "status": "error",
+                "message": "Thiếu symbol"
+            }), 400
+
+        data = alert_db.read_data()
+
+        if symbol not in data:
+            return jsonify({
+                "status": "error",
+                "message": f"Symbol {symbol} không tồn tại"
+            }), 404
+
+        del data[symbol]
+
+        if alert_db.write_data(data, description=f"Delete alert: {symbol}"):
+            return jsonify({
+                "status": "success",
+                "message": f"Đã xóa alert cho {symbol}"
+            })
+        else:
+            return jsonify({
+                "status": "error",
+                "message": "Không thể lưu dữ liệu"
+            }), 500
+
+    except Exception as e:
+        print(f"Error in delete_alert: {str(e)}")
+        return jsonify({
+            "status": "error",
+            "message": str(e)
         }), 500
 
 if __name__ == '__main__':
